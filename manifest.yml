@@ -9,7 +9,7 @@ applications:
 - name: pivnetbot
   <<: *bot_config
   memory: 128M
-  disk_quota: 128M
+  disk_quota: 256M
   buildpacks:
   - ruby_buildpack
   command: ruby pivnetbot.rb
