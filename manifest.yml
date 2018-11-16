@@ -1,0 +1,15 @@
+---
+bot_config: &bot_config
+  stack: cflinuxfs2
+  health-check-type: none
+  services:
+  - papertrail-background-jobs
+
+applications:
+- name: pivnetbot
+  <<: *bot_config
+  memory: 128M
+  disk_quota: 128M
+  buildpacks:
+  - ruby_buildpack
+  command: ruby pivnetbot.rb
