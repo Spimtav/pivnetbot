@@ -11,7 +11,6 @@ class Pivnetbot < Sinatra::Base
 
     set :keyword_hash, {}
     set :pivnetbot_slack_url, ''
-    set :monitored_channels, []
 
     keywords = ENV.fetch('PIVNETBOT_KEYWORDS').split(',')
     keywords &= keywords
@@ -23,10 +22,6 @@ class Pivnetbot < Sinatra::Base
     puts 'Making pivnetbot slack url...'
     settings.pivnetbot_slack_url = ENV['PIVNETBOT_SLACK_URL']
     puts "pivnetbot_slack_url is #{settings.pivnetbot_slack_url}"
-
-    puts 'Making monitored channels...'
-    settings.monitored_channels = ENV.fetch('PIVNETBOT_MONITORED_CHANNEL_IDS').split(',')
-    puts "monitored_channels is #{settings.monitored_channels}"
 
     puts 'BOT INITIALIZATION DONE'
   end
@@ -41,16 +36,11 @@ class Pivnetbot < Sinatra::Base
   end
 
   def process_message(params)
-    puts "Channel name: #{params['channel']}"
-    puts "Channel type: #{params['channel_type']}"
-
-    channel_name = params['channel']
     message_subtype = params['subtype']
 
-    puts "Is #{channel_name} in list #{settings.monitored_channels}: #{settings.monitored_channels.include?(channel_name)}"
     puts "Is this '#{message_subtype}' a bot message: #{message_subtype != 'bot_message'}"
 
-    settings.monitored_channels.include?(channel_name) && message_subtype != 'bot_message'
+    message_subtype != 'bot_message'
   end
 
   def send_message_to_webhook(data)
