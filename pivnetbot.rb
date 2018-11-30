@@ -12,6 +12,7 @@ class Pivnetbot < Sinatra::Base
     set :keyword_hash, {}
     set :pivnetbot_slack_url, ''
     set :monitored_channels, []
+    set :ignored_user_ids, []
 
     keywords = ENV.fetch('PIVNETBOT_KEYWORDS').split(',')
     keywords &= keywords
@@ -25,8 +26,12 @@ class Pivnetbot < Sinatra::Base
     puts "pivnetbot_slack_url is #{settings.pivnetbot_slack_url}"
 
     puts 'Making monitored channels...'
-    settings.monitored_channels = ENV.fetch('PIVNETBOT_MONITORED_CHANNELS').split(',')
+    settings.monitored_channels = ENV.fetch('PIVNETBOT_MONITORED_CHANNEL_IDS').split(',')
     puts "monitored_channels is #{settings.monitored_channels}"
+
+    puts 'Making ignored_user_ids...'
+    settings.ignored_user_ids = ENV.fetch('PIVNETBOT_IGNORED_USER_IDS').split(',')
+    puts "ignored_user_ids is #{settings.ignored_user_ids}"
 
     puts 'BOT INITIALIZATION DONE'
   end
@@ -40,14 +45,17 @@ class Pivnetbot < Sinatra::Base
     keywords & keywords
   end
 
-  def ignore_message(params)
+  def process_message(params)
     puts "Channel name: #{params['channel']}"
     puts "Channel type: #{params['channel_type']}"
 
     channel_name = params['channel']
+    user_id = params['user']
 
     puts "Is #{channel_name} in list #{settings.monitored_channels}: #{settings.monitored_channels.include?(channel_name)}"
-    !settings.monitored_channels.include?(channel_name)
+    puts "Is #{user_id} in list #{settings.ignored_user_ids}: #{!settings.ignored_user_ids.include?(user_id)}"
+
+    settings.monitored_channels.include?(channel_name) && !settings.ignored_user_ids.include?(user_id)
   end
 
   def send_message_to_webhook(data)
@@ -85,10 +93,10 @@ class Pivnetbot < Sinatra::Base
   post '*' do
     puts 'lobster received'
 
-    params = JSON.parse(request.body.read)
+    params = JSON.parse(request.body.read)['event']
     puts "got some params #{params}"
 
-    unless ignore_message(params)
+    if process_message(params)
       if params['type'] == 'url_verification'
         handle_challenge(params)
       elsif params['type'] == 'message'
