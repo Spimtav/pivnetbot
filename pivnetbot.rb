@@ -29,6 +29,7 @@ class Pivnetbot < Sinatra::Base
   def keywords_in_comment(comment)
     puts "In keyword_search function, kwhash is: #{settings.keyword_hash}"
     keywords = []
+    comment.downcase!
     comment.split.each do |word|
       keywords.push(word) if settings.keyword_hash.has_key?(word)
     end
@@ -38,7 +39,7 @@ class Pivnetbot < Sinatra::Base
   def process_message(params)
     message_subtype = params['subtype']
 
-    puts "Is this '#{message_subtype}' a bot message: #{message_subtype != 'bot_message'}"
+    puts "Is this '#{message_subtype}' a bot message: #{message_subtype == 'bot_message'}"
 
     message_subtype != 'bot_message'
   end
