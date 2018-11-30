@@ -12,7 +12,6 @@ class Pivnetbot < Sinatra::Base
     set :keyword_hash, {}
     set :pivnetbot_slack_url, ''
     set :monitored_channels, []
-    set :ignored_user_ids, []
 
     keywords = ENV.fetch('PIVNETBOT_KEYWORDS').split(',')
     keywords &= keywords
@@ -28,10 +27,6 @@ class Pivnetbot < Sinatra::Base
     puts 'Making monitored channels...'
     settings.monitored_channels = ENV.fetch('PIVNETBOT_MONITORED_CHANNEL_IDS').split(',')
     puts "monitored_channels is #{settings.monitored_channels}"
-
-    puts 'Making ignored_user_ids...'
-    settings.ignored_user_ids = ENV.fetch('PIVNETBOT_IGNORED_USER_IDS').split(',')
-    puts "ignored_user_ids is #{settings.ignored_user_ids}"
 
     puts 'BOT INITIALIZATION DONE'
   end
@@ -50,12 +45,12 @@ class Pivnetbot < Sinatra::Base
     puts "Channel type: #{params['channel_type']}"
 
     channel_name = params['channel']
-    user_id = params['user']
+    message_subtype = params['subtype']
 
     puts "Is #{channel_name} in list #{settings.monitored_channels}: #{settings.monitored_channels.include?(channel_name)}"
-    puts "Is #{user_id} in list #{settings.ignored_user_ids}: #{!settings.ignored_user_ids.include?(user_id)}"
+    puts "Is this '#{message_subtype}' a bot message: #{message_subtype != 'bot_message'}"
 
-    settings.monitored_channels.include?(channel_name) && !settings.ignored_user_ids.include?(user_id)
+    settings.monitored_channels.include?(channel_name) && message_subtype != 'bot_message'
   end
 
   def send_message_to_webhook(data)
