@@ -10,15 +10,25 @@ class Pivnetbot < Sinatra::Base
     $stdout.sync = true
 
     set :keyword_hash, {}
+    set :pivnetbot_slack_url, ''
+    set :monitored_channels, []
 
     keywords = ENV.fetch('PIVNETBOT_KEYWORDS').split(',')
     keywords &= keywords
 
     puts 'Making kwhash....'
     keywords.each { |keyword| settings.keyword_hash[keyword]= 0}
-    puts "added these keywords: #{keywords}"
     puts "kwhash is: #{settings.keyword_hash}"
-    puts 'finished initializing kwhash'
+
+    puts 'Making pivnetbot slack url...'
+    settings.pivnetbot_slack_url = ENV['PIVNETBOT_SLACK_URL']
+    puts "pivnetbot_slack_url is #{settings.pivnetbot_slack_url}"
+
+    puts 'Making monitored channels...'
+    settings.monitored_channels = ENV.fetch('PIVNETBOT_MONITORED_CHANNELS').split(',')
+    puts "monitored_channels is #{settings.monitored_channels}"
+
+    puts 'BOT INITIALIZATION DONE'
   end
 
   def keywords_in_comment(comment)
@@ -30,10 +40,20 @@ class Pivnetbot < Sinatra::Base
     keywords & keywords
   end
 
+  def ignore_message(params)
+    puts "Channel name: #{params['channel']}"
+    puts "Channel type: #{params['channel_type']}"
+
+    channel_name = params['channel']
+
+    puts "Is #{channel_name} in list #{settings.monitored_channels}: #{settings.monitored_channels.include?(channel_name)}"
+    !settings.monitored_channels.include?(channel_name)
+  end
+
   def send_message_to_webhook(data)
     RestClient::Request.execute(
         method: :post,
-        url: ENV['PIVNETBOT_SLACK_URL'],
+        url: settings.pivnetbot_slack_url,
         payload: {text: data}.to_json,
         timeout: 10,
         headers: { content_type: 'application/json' }
@@ -54,6 +74,7 @@ class Pivnetbot < Sinatra::Base
 
     puts 'Received a comment!'
     comment = params['text']
+    comment = comment.split(' ').map {|s| s.gsub(/\W/, '')}.join(' ')
     keywords_found = keywords_in_comment(comment)
     puts "Found these keywords: #{keywords_found}"
     send_message_to_webhook("Lobster received this string: #{comment}")
@@ -67,12 +88,14 @@ class Pivnetbot < Sinatra::Base
     params = JSON.parse(request.body.read)
     puts "got some params #{params}"
 
-    if params['type'] == 'url_verification'
-      handle_challenge(params)
-    elsif params['type'] == 'message'
-      handle_message(params)
-    else
-      "received literally any other kind of request: #{params['type']}"
+    unless ignore_message(params)
+      if params['type'] == 'url_verification'
+        handle_challenge(params)
+      elsif params['type'] == 'message'
+        handle_message(params)
+      else
+        "received literally any other kind of request: #{params['type']}"
+      end
     end
   end
 end

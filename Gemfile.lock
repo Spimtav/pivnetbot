@@ -65,16 +65,11 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    semantic_logger (4.3.1)
-      concurrent-ruby (~> 1.0)
     sinatra (2.0.4)
       mustermann (~> 1.0)
       rack (~> 2.0)
       rack-protection (= 2.0.4)
       tilt (~> 2.0)
-    sinatra-logger (0.3.2)
-      semantic_logger
-      sinatra
     slack-ruby-client (0.13.1)
       activesupport
       faraday (>= 0.9)
@@ -109,7 +104,6 @@ DEPENDENCIES
   rake
   rest-client
   sinatra
-  sinatra-logger
   slack-ruby-client
   sprockets-rails
 
