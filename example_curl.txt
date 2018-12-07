@@ -1,2 +1,2 @@
-curl http://localhost:4567 -X POST -d '{"event": {"token": "123", "type": "message", "text": "hel@&lo worl,d,", "channel": "one_channel", "channel_type": "group", "user": "captain_hook", "subtype": "blah"}}'
+curl http://localhost:4567 -X POST -d '{"event": {"token": "123", "ts": "1544220534", "type": "message", "text": "hel@&lo worl,d,", "channel": "one_channel", "channel_type": "group", "user": "captain_hook", "subtype": "blah"}}'
 
