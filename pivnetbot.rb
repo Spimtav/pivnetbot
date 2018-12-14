@@ -1,3 +1,4 @@
+require 'json'
 require 'sinatra'
 require 'rest-client'
 require './authorization_middleware'
@@ -10,13 +11,16 @@ class Pivnetbot < Sinatra::Base
   configure do
     $stdout.sync = true
 
-    set :token, ENV['PIVNETBOT_TOKEN']
+    set :verification_token, ENV['PIVNETBOT_VERIFICATION_TOKEN']
+    set :oauth_token, ENV['PIVNETBOT_OAUTH_TOKEN']
     set :keywords, ENV.fetch('PIVNETBOT_KEYWORDS').split(',')
     set :pivnetbot_slack_url, ENV['PIVNETBOT_SLACK_URL']
     set :google_sheets_credentials, ENV['PIVNETBOT_GOOGLE_SHEETS_CREDENTIALS']
     set :spreadsheet_title, ENV['PIVNETBOT_SPREADSHEET_TITLE']
     set :google_sheets_worksheet_object, GoogleSheets::initialize(settings)
 
+    puts "verification token is: #{settings.verification_token}"
+    puts "oauth token is: #{settings.oauth_token}"
     puts "keyword list is: #{settings.keywords}"
     puts "pivnetbot_slack_url is #{settings.pivnetbot_slack_url}"
     puts "google_sheets_credentials is #{settings.google_sheets_credentials}"
@@ -24,7 +28,7 @@ class Pivnetbot < Sinatra::Base
     puts "Google sheets service object is: #{settings.google_sheets_worksheet_object.inspect}"
 
     puts 'Writing line to sheet'
-    # GoogleSheets::write_line(settings, ['私', 'の', '猫', 'が', '可愛い', 'です'])
+    GoogleSheets::write_line(settings, ['あなた', 'の', '電話番号', 'は', '何ですか'])
 
     puts 'BOT INITIALIZATION DONE'
   end
@@ -61,18 +65,23 @@ class Pivnetbot < Sinatra::Base
   end
 
   def get_message_permalink(message_timestamp, channel_id)
-    response = RestClient::Request.execute(
-      method: :get,
-      url: 'https://slack.com/api/chat.getPermalink',
-      payload: {
-        token: settings.token,
-        channel: channel_id,
-        message_ts: message_timestamp
-      }.to_json,
-      timeout: 10,
-    )
+    base_url = 'https://slack.com/api/chat.getPermalink'
+    full_url = "#{base_url}?token=#{settings.oauth_token}&message_ts=#{message_timestamp}&channel=#{channel_id}"
 
-    puts "Message permalink response is: #{response.inspect}"
+    response = JSON.parse(RestClient::Request.execute(
+      method: :get,
+      url: full_url,
+      timeout: 10
+    ).body)
+
+    puts "Message permalink response is: #{response}"
+    puts response.inspect
+
+    unless response['error'].nil?
+      puts "Failed to retrieve permalink from server: #{response['error']}"
+      return ''
+    end
+    response['permalink']
   end
 
   def handle_challenge(params)
@@ -99,15 +108,19 @@ class Pivnetbot < Sinatra::Base
     send_message_to_webhook("Lobster parsed these keywords: #{keywords_found}")
 
     message_permalink = get_message_permalink(message_timestamp, channel_id)
+    timestamp = Time.at(params['ts'].to_f)
+
+    puts "HEYA the permalink is: #{message_permalink}"
 
     line = [
-      Time.at(params['ts'].to_f),
+      timestamp.strftime('%Y-%m-%d'),
+      timestamp.strftime('%H:%M:%S'),
       keywords_found.join(", "),
       comment,
       message_permalink
     ]
 
-    GoogleSheets::write_line(settings, [line])
+    GoogleSheets::write_line(settings, line)
 
     keywords_found
   end

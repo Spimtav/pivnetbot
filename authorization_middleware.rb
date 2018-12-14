@@ -14,10 +14,10 @@ class SlackAuthorizer
     puts "Parsed params are: #{params}"
     req.body.rewind
 
-    if params['token'] && params['token'] == ENV['PIVNETBOT_TOKEN']
+    if params['token'] && params['token'] == ENV['PIVNETBOT_VERIFICATION_TOKEN']
       @app.call(env)
     else
-      puts 'we are here'
+      puts 'Middleware denied a message because token not present or malformed'
       UNAUTHORIZED_RESPONSE
     end
   end
