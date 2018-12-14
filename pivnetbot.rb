@@ -130,26 +130,28 @@ class Pivnetbot < Sinatra::Base
     send_message_to_webhook("Lobster received this string: #{comment}")
     send_message_to_webhook("Lobster parsed these keywords: #{keywords_found}")
 
-    message_permalink = get_message_permalink(message_timestamp, channel_id)
-    timestamp = Time.at(params['ts'].to_f)
+    if keywords_found.size > 0
+      message_permalink = get_message_permalink(message_timestamp, channel_id)
+      timestamp = Time.at(params['ts'].to_f)
 
-    puts "HEYA the permalink is: #{message_permalink}"
+      puts "HEYA the permalink is: #{message_permalink}"
 
-    user_profile = get_user_profile(params['user'])
-    user_name = user_profile['real_name']
-    user_email = user_profile['email']
+      user_profile = get_user_profile(params['user'])
+      user_name = user_profile['real_name']
+      user_email = user_profile['email']
 
-    line = [
-      timestamp.strftime('%Y-%m-%d'),
-      timestamp.strftime('%H:%M:%S'),
-      keywords_found.join(", "),
-      comment,
-      user_name,
-      user_email,
-      message_permalink
-    ]
+      line = [
+          timestamp.strftime('%Y-%m-%d'),
+          timestamp.strftime('%H:%M:%S'),
+          keywords_found.join(", "),
+          comment,
+          user_name,
+          user_email,
+          message_permalink
+      ]
 
-    GoogleSheets::write_line(settings, line)
+      GoogleSheets::write_line(settings, line)
+    end
 
     keywords_found
   end
