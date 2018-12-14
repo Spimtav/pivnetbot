@@ -64,6 +64,29 @@ class Pivnetbot < Sinatra::Base
     )
   end
 
+  def get_user_profile(user_id)
+    base_url = 'https://slack.com/api/users.info'
+    full_url = "#{base_url}?token=#{settings.oauth_token}&user=#{user_id}"
+
+    puts "full user profile url: #{full_url}"
+    puts "Userid for this chunp is: #{user_id}"
+
+    response = JSON.parse(RestClient::Request.execute(
+        method: :get,
+        url: full_url,
+        timeout: 10
+    ).body)
+
+    puts "User info response is: #{response}"
+    puts response.inspect
+
+    unless response['error'].nil?
+      puts "Failed to retrieve user info from server: #{response['error']}"
+      return ''
+    end
+    response['user']['profile']
+  end
+
   def get_message_permalink(message_timestamp, channel_id)
     base_url = 'https://slack.com/api/chat.getPermalink'
     full_url = "#{base_url}?token=#{settings.oauth_token}&message_ts=#{message_timestamp}&channel=#{channel_id}"
@@ -112,11 +135,17 @@ class Pivnetbot < Sinatra::Base
 
     puts "HEYA the permalink is: #{message_permalink}"
 
+    user_profile = get_user_profile(params['user'])
+    user_name = user_profile['real_name']
+    user_email = user_profile['email']
+
     line = [
       timestamp.strftime('%Y-%m-%d'),
       timestamp.strftime('%H:%M:%S'),
       keywords_found.join(", "),
       comment,
+      user_name,
+      user_email,
       message_permalink
     ]
 
@@ -127,6 +156,10 @@ class Pivnetbot < Sinatra::Base
 
   post '*' do
     puts 'lobster received'
+
+    params = JSON.parse(request.body.read)
+    puts "Parsed params are: #{params}"
+    request.body.rewind
 
     params = JSON.parse(request.body.read)['event']
     puts "got some params #{params}"
