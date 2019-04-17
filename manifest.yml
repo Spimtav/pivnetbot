@@ -1,6 +1,6 @@
 ---
 bot_config: &bot_config
-  stack: cflinuxfs2
+  stack: cflinuxfs3
   health-check-type: none
   services:
   - papertrail-background-jobs
